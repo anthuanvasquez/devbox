@@ -11,17 +11,21 @@
 #
 # Create TS_AUTHKEY environment variable before running
 # the script to avoid tailscale browser login.
+#
+# Example:
+#   export TS_AUTHKEY="tskey-auth-..."
+#   ./install.sh
 # ============================================================
 
 set -euo pipefail
 
 readonly SCRIPT_NAME="$(basename "$0")"
-readonly NODE_MAJOR="22"
 
 ORCA_DIR="/opt/orca"
 ORCA_BIN="${ORCA_DIR}/orca.AppImage"
 ORCA_PORT="6768"
 STATE_DIR="${HOME}/.local/state/wsl-devbox-bootstrap"
+TS_IP=""
 
 mkdir -p "${STATE_DIR}"
 
@@ -185,14 +189,14 @@ configure_git() {
 # ------------------------------------------------------------
 
 configure_ssh() {
-    log "Configuring OpenSSH server..."
+    info "Configuring OpenSSH server..."
 
     sudo systemctl enable --now ssh
 
     cat <<EOF
 
 >>> MANUAL ACTION REQUIRED: copy your SSH public key (from your Mac) to this devbox:
-    ssh-copy-id -i ~/.ssh/id_rsa.pub $(whoami)@${TS_IP:-<ip-tailscale>}
+    ssh-copy-id -i ~/.ssh/id_rsa.pub $(whoami)@<tailscale-ip>
     (or manually paste the content into ~/.ssh/authorized_keys here)
 EOF
 }
@@ -246,16 +250,16 @@ EOF
 
 install_tailscale() {
     if ! command -v tailscale >/dev/null 2>&1; then
-        log "Installing Tailscale..."
+        info "Installing Tailscale..."
         curl -fsSL https://tailscale.com/install.sh | sh
     else
-        log "Tailscale is already installed."
+        success "Tailscale already installed"
     fi
 
     sudo systemctl enable --now tailscaled
 
     if ! tailscale status >/dev/null 2>&1; then
-        log "Starting Tailscale login (check the link below)..."
+        info "Starting Tailscale login..."
 
         # If you define TS_AUTHKEY as an environment variable before running the script,
         # automatic auth without a browser is used:
@@ -266,7 +270,7 @@ install_tailscale() {
             cat <<'EOF'
 
 >>> MANUAL ACTION REQUIRED: if a login URL appeared above, open it in
-    any browser (Windows, Mac, or mobile) and authorize this node. <
+    any browser (Windows, Mac, or mobile) and authorize this node.
 
 EOF
         fi
@@ -274,6 +278,8 @@ EOF
 
     TS_IP="$(tailscale ip -4 2>/dev/null | head -n1 || true)"
     [[ -n "${TS_IP}" ]] || warn "Could not read the Tailscale IP yet; run 'tailscale ip -4' manually later."
+
+    success "Tailscale IP: ${TS_IP:-<pending>}"
 }
 
 #------------------------------------------------------------
@@ -281,7 +287,12 @@ EOF
 #------------------------------------------------------------
 
 install_orca() {
-    log "Installing Orca..."
+    if [[ -x "${ORCA_BIN}" ]]; then
+        success "Orca already installed at ${ORCA_BIN}"
+        return
+    fi
+
+    info "Installing Orca..."
 
     LATEST_URL="$(curl -fsSL https://api.github.com/repos/stablyai/orca/releases/latest \
     | jq -r '.assets[] | select(.name | test("AppImage$")) | .browser_download_url' \
@@ -293,7 +304,7 @@ install_orca() {
     sudo curl -fsSL "${LATEST_URL}" -o "${ORCA_BIN}"
     sudo chmod +x "${ORCA_BIN}"
 
-    log "Orca downloaded to ${ORCA_BIN}"
+    success "Orca downloaded to ${ORCA_BIN}"
 }
 
 # ------------------------------------------------------------
@@ -301,7 +312,11 @@ install_orca() {
 # ------------------------------------------------------------
 
 configure_orca() {
-    log "Configuring systemd --user service: orca-serve.service"
+    info "Configuring systemd --user service: orca-serve.service"
+
+    # Use Tailscale IP if available; fall back to 0.0.0.0 so the service
+    # still starts and is reachable once Tailscale connects.
+    local pairing_addr="${TS_IP:-0.0.0.0}"
 
     mkdir -p "${HOME}/.config/systemd/user"
 
@@ -313,7 +328,7 @@ Wants=network-online.target
 
 [Service]
 Environment=LIBGL_ALWAYS_SOFTWARE=1
-ExecStart=/usr/bin/xvfb-run --auto-servernum ${ORCA_BIN} serve --port ${ORCA_PORT} --pairing-address ${TS_IP:-127.0.0.1}
+ExecStart=/usr/bin/xvfb-run --auto-servernum ${ORCA_BIN} serve --port ${ORCA_PORT} --pairing-address ${pairing_addr}
 Restart=on-failure
 RestartSec=5
 
@@ -326,6 +341,8 @@ EOF
 
     systemctl --user daemon-reload
     systemctl --user enable --now orca-serve.service
+
+    success "Orca service enabled (port ${ORCA_PORT})"
 }
 
 #------------------------------------------------------------
@@ -341,7 +358,15 @@ install_1password() {
     info "Installing 1Password CLI..."
 
     curl -sS https://downloads.1password.com/linux/keys/1password.asc | sudo gpg --dearmor -o /usr/share/keyrings/1password-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/1password.list
+
+    # 1Password's apt repo uses a fixed "stable" suite with the arch in the path
+    # (not the Ubuntu/Debian codename from lsb_release).
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/$(dpkg --print-architecture) stable main" | sudo tee /etc/apt/sources.list.d/1password.list
+
+    sudo mkdir -p /etc/debsig/policies/AC2D62742012EA22/
+    curl -sS https://downloads.1password.com/linux/debian/debsig/1password.pol | sudo tee /etc/debsig/policies/AC2D62742012EA22/1password.pol >/dev/null
+    sudo mkdir -p /usr/share/debsig/keyrings/AC2D62742012EA22
+    curl -sS https://downloads.1password.com/linux/keys/1password.asc | sudo gpg --dearmor -o /usr/share/debsig/keyrings/AC2D62742012EA22/debsig.gpg
 
     sudo apt-get update -y
     sudo apt-get install -y 1password-cli
@@ -400,6 +425,9 @@ install_node() {
     if ! command -v fnm >/dev/null 2>&1; then
         die "FNM is not installed"
     fi
+
+    # 'fnm use'/'fnm default' need the multishell env set up by 'fnm env' first.
+    eval "$(fnm env --shell bash)"
 
     # Install latest LTS
     fnm install --lts
@@ -490,7 +518,7 @@ install_copilot() {
 # ------------------------------------------------------------
 
 install_antigravity() {
-    if command -v antigravity >/dev/null 2>&1; then
+    if command -v agy >/dev/null 2>&1; then
         success "Antigravity CLI already installed"
         return
     fi
@@ -609,7 +637,7 @@ verify_installation() {
 # ------------------------------------------------------------
 
 print_summary() {
-    cat <<'EOF'
+    cat <<EOF
 
 ============================================================
  DevBox installation complete
