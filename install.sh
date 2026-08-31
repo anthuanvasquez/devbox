@@ -19,8 +19,6 @@
 
 set -euo pipefail
 
-readonly SCRIPT_NAME="$(basename "$0")"
-
 ORCA_DIR="/opt/orca"
 ORCA_BIN="${ORCA_DIR}/orca.AppImage"
 ORCA_PORT="6768"
