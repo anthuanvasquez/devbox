@@ -362,7 +362,8 @@ Wants=network-online.target
 
 [Service]
 Environment=LIBGL_ALWAYS_SOFTWARE=1
-ExecStart=/usr/bin/xvfb-run --auto-servernum ${ORCA_BIN} serve --port ${ORCA_PORT} --pairing-address ${pairing_addr}
+# --appimage-extract-and-run avoids requiring /dev/fuse, which WSL2 often lacks.
+ExecStart=/usr/bin/xvfb-run --auto-servernum ${ORCA_BIN} --appimage-extract-and-run serve --port ${ORCA_PORT} --pairing-address ${pairing_addr}
 Restart=on-failure
 RestartSec=5
 
