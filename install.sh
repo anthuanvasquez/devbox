@@ -319,7 +319,7 @@ EOF
 #------------------------------------------------------------
 
 install_orca() {
-    if [[ -x "${ORCA_BIN}" ]]; then
+    if [[ -x "${ORCA_BIN}" ]] && file "${ORCA_BIN}" | grep -qi 'executable'; then
         success "Orca already installed at ${ORCA_BIN}"
         return
     fi
@@ -335,6 +335,8 @@ install_orca() {
     sudo mkdir -p "${ORCA_DIR}"
     sudo curl -fsSL "${LATEST_URL}" -o "${ORCA_BIN}"
     sudo chmod +x "${ORCA_BIN}"
+
+    file "${ORCA_BIN}" | grep -qi 'executable' || die "Downloaded Orca AppImage looks corrupted/incomplete: ${ORCA_BIN}"
 
     success "Orca downloaded to ${ORCA_BIN}"
 }
