@@ -166,8 +166,19 @@ install_apt_packages() {
 configure_git() {
     info "Configuring Git..."
 
-    if git config --global user.name >/dev/null 2>&1 && git config --global user.email >/dev/null 2>&1; then
+    local current_name current_email
+    current_name="$(git config --global user.name 2>/dev/null || true)"
+    current_email="$(git config --global user.email 2>/dev/null || true)"
+
+    if [[ -n "${current_name}" && -n "${current_email}" ]]; then
         warn "Git user name and email are already set. Skipping configuration."
+        return
+    fi
+
+    # Piped execution (curl | bash) consumes stdin, so reads would hang/fail here.
+    if [[ ! -t 0 ]]; then
+        warn "Non-interactive shell detected. Skipping Git user/email prompt."
+        warn "Run 'git config --global user.name/user.email' manually later."
         return
     fi
 
