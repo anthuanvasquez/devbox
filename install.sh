@@ -121,14 +121,37 @@ EOF
 # APT
 # ------------------------------------------------------------
 
+# Waits for other apt/dpkg processes (e.g. unattended-upgrades) to release their locks.
+wait_for_apt_lock() {
+    local locks=(/var/lib/apt/lists/lock /var/lib/dpkg/lock /var/lib/dpkg/lock-frontend /var/cache/apt/archives/lock)
+    local waited=0
+    local max_wait=180
+
+    while sudo fuser "${locks[@]}" >/dev/null 2>&1; do
+        if [[ "${waited}" -eq 0 ]]; then
+            warn "Waiting for another apt/dpkg process to finish..."
+        fi
+        if [[ "${waited}" -ge "${max_wait}" ]]; then
+            die "Timed out waiting for the apt/dpkg lock to be released."
+        fi
+        sleep 5
+        waited=$((waited + 5))
+    done
+}
+
+apt_get() {
+    wait_for_apt_lock
+    sudo apt-get "$@"
+}
+
 install_apt_packages() {
     info "Updating APT repositories..."
 
-    sudo apt-get update -y
+    apt_get update -y
 
     info "Installing base development packages..."
 
-    sudo apt-get install -y \
+    apt_get install -y \
         ca-certificates \
         curl \
         wget \
@@ -239,9 +262,9 @@ Architectures: $(dpkg --print-architecture)
 Signed-By: /etc/apt/keyrings/docker.asc
 EOF
 
-    sudo apt-get update -y
+    apt_get update -y
 
-    sudo apt-get install -y \
+    apt_get install -y \
         docker-ce \
         docker-ce-cli \
         containerd.io \
@@ -377,8 +400,8 @@ install_1password() {
     sudo mkdir -p /usr/share/debsig/keyrings/AC2D62742012EA22
     curl -sS https://downloads.1password.com/linux/keys/1password.asc | sudo gpg --dearmor -o /usr/share/debsig/keyrings/AC2D62742012EA22/debsig.gpg
 
-    sudo apt-get update -y
-    sudo apt-get install -y 1password-cli
+    apt_get update -y
+    apt_get install -y 1password-cli
 
     success "1Password CLI installed"
 }
@@ -498,9 +521,9 @@ install_gh() {
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" |
         sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
 
-    sudo apt-get update
+    apt_get update
 
-    sudo apt-get install -y gh
+    apt_get install -y gh
 
     success "GitHub CLI $(gh --version | head -n 1)"
 }
@@ -637,8 +660,8 @@ verify_installation() {
     fi
 
     # clean up apt cache
-    sudo apt-get clean
-    sudo apt-get autoremove -y
+    apt_get clean
+    apt_get autoremove -y
 }
 
 # ------------------------------------------------------------
