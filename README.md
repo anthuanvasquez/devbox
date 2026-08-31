@@ -34,19 +34,19 @@ export TS_AUTHKEY="tskey-auth-..."
 
 | Herramienta | Descripción |
 |---|---|
-| **Git** | Control de versiones |
-| **Docker Engine + Compose** | Contenedores |
-| **Tailscale** | VPN mesh para acceso remoto |
-| **Orca** | Entorno de trabajo con agentes de IA (headless via AppImage) |
-| **GitHub CLI (`gh`)** | Interacción con GitHub (issues, PRs, repos) |
-| **GitHub Copilot CLI (`copilot`)** | Agente de IA en la terminal |
-| **Antigravity CLI (`agy`)** | CLI de Antigravity |
-| **FNM** | Fast Node Manager |
-| **Node.js LTS** | Runtime de JavaScript |
-| **pnpm** | Package manager (vía Corepack) |
-| **1Password CLI (`op`)** | Gestión de secretos |
-| **fzf, ripgrep, fd, tmux, jq** | Utilidades de shell |
-| **OpenSSH server** | Acceso SSH remoto |
+| **[Git](https://git-scm.com/)** | Control de versiones |
+| **[Docker Engine + Compose](https://www.docker.com/)** | Contenedores |
+| **[Tailscale](https://tailscale.com/)** | VPN mesh para acceso remoto |
+| **[Orca](https://www.onorca.dev/)** | Entorno de trabajo con agentes de IA (headless via AppImage) |
+| **[GitHub CLI](https://cli.github.com/) (`gh`)** | Interacción con GitHub (issues, PRs, repos) |
+| **[GitHub Copilot CLI](https://github.com/features/copilot/cli) (`copilot`)** | Agente de IA en la terminal |
+| **[Antigravity CLI](https://antigravity.google/docs/cli/overview/) (`agy`)** | CLI de Antigravity |
+| **[FNM](https://github.com/schniz/fnm)** | Fast Node Manager |
+| **[Node.js LTS](https://nodejs.org/en)** | Runtime de JavaScript |
+| **[PNPM](https://pnpm.io/)** | Package manager (vía Corepack) |
+| **[1Password CLI](https://www.1password.dev/cli) (`op`)** | Gestión de secretos |
+| **[fzf](https://junegunn.github.io/fzf/), [ripgrep](https://github.com/burntsushi/ripgrep), [fd](https://github.com/sharkdp/fd), [tmux](https://github.com/tmux/tmux), [jq](https://jqlang.org/)** | Utilidades de shell |
+| **[OpenSSH server](https://www.openssh.org/)** | Acceso SSH remoto |
 
 ## Cómo funciona el acceso remoto
 
