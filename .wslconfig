@@ -1,0 +1,8 @@
+[wsl2]
+networkingMode=mirrored
+memory=16GB
+processors=8
+swap=4GB
+
+[experimental]
+hostAddressLoopback=true
