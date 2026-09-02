@@ -321,9 +321,35 @@ orca_command() {
     command -v orca 2>/dev/null || command -v orca-ide 2>/dev/null || true
 }
 
+# The .deb's Depends: doesn't reliably declare every Electron/Chromium runtime lib
+# (libnspr4, libasound2, etc. have been observed missing), so install them ourselves.
+ensure_orca_runtime_deps() {
+    apt_get install -y \
+        libnspr4 \
+        libnss3 \
+        libasound2t64 \
+        libgtk-3-0t64 \
+        libgbm1 \
+        libxss1 \
+        libxtst6 \
+        libatk1.0-0t64 \
+        libatk-bridge2.0-0t64 \
+        libcups2t64 \
+        libdrm2 \
+        libxkbcommon0 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxfixes3 \
+        libxrandr2 \
+        libpango-1.0-0 \
+        libcairo2 \
+        libx11-xcb1
+}
+
 install_orca() {
     if [[ -n "$(orca_command)" ]]; then
         success "Orca already installed at $(orca_command)"
+        ensure_orca_runtime_deps
         return
     fi
 
@@ -344,11 +370,17 @@ install_orca() {
 
     [[ -n "${LATEST_URL}" ]] || die "Could not resolve the URL of the latest Orca .deb. Check https://github.com/stablyai/orca/releases manually."
 
-    local deb_path="${STATE_DIR}/orca.deb"
+    # /tmp is world-readable; $STATE_DIR lives under $HOME (mode 700), which apt's
+    # unprivileged '_apt' user can't read, causing "Permission denied" on install.
+    local deb_path
+    deb_path="$(mktemp /tmp/orca-XXXXXX.deb)"
     curl -fsSL "${LATEST_URL}" -o "${deb_path}"
 
     # Modern apt installs a local .deb file and pulls its declared Depends: from repos.
     apt_get install -y "${deb_path}"
+    rm -f "${deb_path}"
+
+    ensure_orca_runtime_deps
 
     [[ -n "$(orca_command)" ]] || die "Orca .deb installed but no 'orca' or 'orca-ide' command found on PATH."
 
@@ -368,7 +400,9 @@ configure_orca() {
 
     mkdir -p "${HOME}/.config/systemd/user"
 
-    # orca serve runs headless on its own (no desktop window), so no xvfb/sandbox flags needed.
+    # orca serve tries to spawn its own Xvfb internally, but that's racy ('did not
+    # become ready in time') and it then crashes with 'Missing X server or $DISPLAY'.
+    # Pre-start a real Xvfb via xvfb-run so $DISPLAY is already valid when it launches.
     cat > "${HOME}/.config/systemd/user/orca-serve.service" <<EOF
 [Unit]
 Description=Orca headless server (WSL devbox)
@@ -376,7 +410,7 @@ After=network-online.target tailscaled.service
 Wants=network-online.target
 
 [Service]
-ExecStart=$(orca_command) serve --port ${ORCA_PORT} --pairing-address ${pairing_addr}
+ExecStart=/usr/bin/xvfb-run --auto-servernum $(orca_command) serve --port ${ORCA_PORT} --pairing-address ${pairing_addr}
 Restart=on-failure
 RestartSec=5
 
