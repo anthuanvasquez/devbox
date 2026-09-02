@@ -326,8 +326,17 @@ install_orca() {
 
     info "Installing Orca..."
 
+    # Release ships both orca-linux.AppImage (x86_64) and orca-linux-arm64.AppImage;
+    # match the current architecture explicitly instead of taking the first hit.
+    local arch_pattern
+    case "$(uname -m)" in
+        x86_64|amd64) arch_pattern='^orca-linux\.AppImage$' ;;
+        aarch64|arm64) arch_pattern='^orca-linux-arm64\.AppImage$' ;;
+        *) die "Unsupported architecture for Orca: $(uname -m)" ;;
+    esac
+
     LATEST_URL="$(curl -fsSL https://api.github.com/repos/stablyai/orca/releases/latest \
-    | jq -r '.assets[] | select(.name | test("AppImage$")) | .browser_download_url' \
+    | jq -r --arg pat "${arch_pattern}" '.assets[] | select(.name | test($pat)) | .browser_download_url' \
     | head -n1)"
 
     [[ -n "${LATEST_URL}" ]] || die "Could not resolve the URL of the latest Orca AppImage. Check https://github.com/stablyai/orca/releases manually."
