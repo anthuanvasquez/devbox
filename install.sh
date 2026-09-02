@@ -19,8 +19,6 @@
 
 set -euo pipefail
 
-ORCA_DIR="/opt/orca"
-ORCA_BIN="${ORCA_DIR}/orca.AppImage"
 ORCA_PORT="6768"
 STATE_DIR="${HOME}/.local/state/wsl-devbox-bootstrap"
 TS_IP=""
@@ -318,20 +316,25 @@ EOF
 # Orca
 #------------------------------------------------------------
 
+# Resolves the `orca` CLI's binary name, since the .deb doesn't always symlink it as `orca`.
+orca_command() {
+    command -v orca 2>/dev/null || command -v orca-ide 2>/dev/null || true
+}
+
 install_orca() {
-    if [[ -x "${ORCA_BIN}" ]] && file "${ORCA_BIN}" | grep -qi 'executable'; then
-        success "Orca already installed at ${ORCA_BIN}"
+    if [[ -n "$(orca_command)" ]]; then
+        success "Orca already installed at $(orca_command)"
         return
     fi
 
-    info "Installing Orca..."
+    info "Installing Orca (.deb package, per https://docs.orca.dev headless setup)..."
 
-    # Release ships both orca-linux.AppImage (x86_64) and orca-linux-arm64.AppImage;
-    # match the current architecture explicitly instead of taking the first hit.
+    # .deb Depends: are resolved by apt, so we don't need to hand-maintain the
+    # Electron/GTK runtime library list ourselves.
     local arch_pattern
     case "$(uname -m)" in
-        x86_64|amd64) arch_pattern='^orca-linux\.AppImage$' ;;
-        aarch64|arm64) arch_pattern='^orca-linux-arm64\.AppImage$' ;;
+        x86_64|amd64) arch_pattern='_amd64\.deb$' ;;
+        aarch64|arm64) arch_pattern='_arm64\.deb$' ;;
         *) die "Unsupported architecture for Orca: $(uname -m)" ;;
     esac
 
@@ -339,15 +342,17 @@ install_orca() {
     | jq -r --arg pat "${arch_pattern}" '.assets[] | select(.name | test($pat)) | .browser_download_url' \
     | head -n1)"
 
-    [[ -n "${LATEST_URL}" ]] || die "Could not resolve the URL of the latest Orca AppImage. Check https://github.com/stablyai/orca/releases manually."
+    [[ -n "${LATEST_URL}" ]] || die "Could not resolve the URL of the latest Orca .deb. Check https://github.com/stablyai/orca/releases manually."
 
-    sudo mkdir -p "${ORCA_DIR}"
-    sudo curl -fsSL "${LATEST_URL}" -o "${ORCA_BIN}"
-    sudo chmod +x "${ORCA_BIN}"
+    local deb_path="${STATE_DIR}/orca.deb"
+    curl -fsSL "${LATEST_URL}" -o "${deb_path}"
 
-    file "${ORCA_BIN}" | grep -qi 'executable' || die "Downloaded Orca AppImage looks corrupted/incomplete: ${ORCA_BIN}"
+    # Modern apt installs a local .deb file and pulls its declared Depends: from repos.
+    apt_get install -y "${deb_path}"
 
-    success "Orca downloaded to ${ORCA_BIN}"
+    [[ -n "$(orca_command)" ]] || die "Orca .deb installed but no 'orca' or 'orca-ide' command found on PATH."
+
+    success "Orca installed at $(orca_command)"
 }
 
 # ------------------------------------------------------------
@@ -363,6 +368,7 @@ configure_orca() {
 
     mkdir -p "${HOME}/.config/systemd/user"
 
+    # orca serve runs headless on its own (no desktop window), so no xvfb/sandbox flags needed.
     cat > "${HOME}/.config/systemd/user/orca-serve.service" <<EOF
 [Unit]
 Description=Orca headless server (WSL devbox)
@@ -370,9 +376,7 @@ After=network-online.target tailscaled.service
 Wants=network-online.target
 
 [Service]
-Environment=LIBGL_ALWAYS_SOFTWARE=1
-# --appimage-extract-and-run avoids requiring /dev/fuse, which WSL2 often lacks.
-ExecStart=/usr/bin/xvfb-run --auto-servernum ${ORCA_BIN} --appimage-extract-and-run serve --port ${ORCA_PORT} --pairing-address ${pairing_addr}
+ExecStart=$(orca_command) serve --port ${ORCA_PORT} --pairing-address ${pairing_addr}
 Restart=on-failure
 RestartSec=5
 
