@@ -4,8 +4,9 @@ Bootstrap script to configure an Ubuntu/WSL2 machine ready for remote developmen
 
 ## Prerequisites
 
-- Windows with WSL2 + Ubuntu installed
+- Windows with WSL2 + Ubuntu LTS installed
 - Internet connectivity within WSL
+- cURL, and `sudo` available in WSL (usually pre-installed)
 
 ## Quick Start
 
@@ -71,7 +72,7 @@ The script cannot automate these steps because they require interactive credenti
 ### 1. Copy your SSH public key (from your Mac)
 
 ```bash
-ssh-copy-id -i ~/.ssh/id_rsa.pub <username>@<tailscale-ip>
+ssh-copy-id -i ~/.ssh/id_ed25519.pub <username>@<tailscale-ip>
 ```
 
 ### 2. Authenticate CLI tools
