@@ -28,9 +28,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check bash syntax (shellcheck -n equivalent)
-        run: bash -n install.sh
+        run: |
+          bash -n install.sh
+          bash -n update-orca.sh
 
       - name: Verify shebang and executable bit
         run: |
           head -n1 install.sh | grep -q '^#!/usr/bin/env bash'
           test -x install.sh
+          head -n1 update-orca.sh | grep -q '^#!/usr/bin/env bash'
+          test -x update-orca.sh
