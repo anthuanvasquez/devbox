@@ -173,5 +173,13 @@ The build will fail if any installation step or the smoke test fails (`set -e` i
 docker rmi devbox-test
 ```
 
+## Future Improvements
+
+- **1Password Service Accounts & SSH Agent Forwarding:** Headless secrets retrieval via `OP_SERVICE_ACCOUNT_TOKEN` and Touch ID Git commit signing/auth via SSH agent forwarding (`ssh -A`), avoiding the overhead of running Connect Server containers.
+- **Tailscale Serve / Funnel:** Instant HTTPS endpoints with automatic TLS certificates on your private tailnet (`tailscale serve`) for local dev servers and agent webhooks without configuring a reverse proxy.
+- **WSL2 Resource Optimization & Docker Cleanup:** Host `.wslconfig` recommendations (`autoMemoryReclaim`) and automated systemd timer for Docker cache pruning (`docker system prune`) to avoid disk bloat.
+- **Agent Session Persistence:** Preconfigured `tmux` / `zellij` workflow to keep long-running AI agent sessions (Claude Code, Antigravity) running uninterrupted across disconnects.
+- **Orca Healthcheck Watchdog:** Automated systemd healthcheck to monitor port `6768` and recover the headless server gracefully after host sleep or network changes.
+
 ## License
 MIT License © 2026 Anthuan Vásquez. See [LICENSE](LICENSE) for details.
