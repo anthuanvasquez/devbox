@@ -1,4 +1,4 @@
-# DevBox — WSL2 Bootstrap
+# DevBox — WSL2 Multi-Agents | Orca + Tailscale
 
 Script de instalación para dejar una máquina Ubuntu/WSL2 lista para trabajar remotamente con múltiples proyectos y agentes de IA, usando **Orca** como entorno de trabajo y **Tailscale** para acceso remoto seguro.
 
