@@ -226,7 +226,7 @@ configure_ssh() {
     cat <<EOF
 
 >>> MANUAL ACTION REQUIRED: copy your SSH public key (from your Mac) to this devbox:
-    ssh-copy-id -i ~/.ssh/id_rsa.pub $(whoami)@<tailscale-ip>
+    ssh-copy-id -i ~/.ssh/id_ed25519.pub $(whoami)@<tailscale-ip>
     (or manually paste the content into ~/.ssh/authorized_keys here)
 EOF
 }
