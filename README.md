@@ -1,80 +1,80 @@
 # DevBox — WSL2 Multi-Agents | Orca + Tailscale
 
-Script de instalación para dejar una máquina Ubuntu/WSL2 lista para trabajar remotamente con múltiples proyectos y agentes de IA, usando **Orca** como entorno de trabajo y **Tailscale** para acceso remoto seguro.
+Bootstrap script to configure an Ubuntu/WSL2 machine ready for remote development across multiple projects and AI agents, using **Orca** as the workspace environment and **Tailscale** for secure remote access.
 
-## Requisitos previos
+## Prerequisites
 
-- Windows con WSL2 + Ubuntu instalado
-- Acceso a internet desde dentro de WSL
+- Windows with WSL2 + Ubuntu installed
+- Internet connectivity within WSL
 
-## Uso rápido
+## Quick Start
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/anthuanvasquez/devbox/main/install.sh | bash
 ```
 
-O clona el repo y ejecútalo localmente:
+Or clone the repository and run it locally:
 
 ```bash
 ./install.sh
 ```
 
-### Tailscale sin browser (recomendado)
+### Headless Tailscale (Recommended)
 
-Si tienes un auth key de Tailscale, evitas la autenticación interactiva:
+Provide a Tailscale auth key beforehand to skip interactive browser login:
 
 ```bash
 export TS_AUTHKEY="tskey-auth-..."
 ./install.sh
 ```
 
-> **No ejecutes el script como root.** Usa tu usuario normal; el script usa `sudo` donde lo necesita.
+> **Do not run the script as root.** Run as your regular user; the script invokes `sudo` whenever elevated privileges are required.
 
-## Qué instala
+## What It Installs
 
-| Herramienta | Descripción |
+| Tool | Description |
 |---|---|
-| **[Git](https://git-scm.com/)** | Control de versiones |
-| **[Docker Engine + Compose](https://www.docker.com/)** | Contenedores |
-| **[Tailscale](https://tailscale.com/)** | VPN mesh para acceso remoto |
-| **[Orca](https://www.onorca.dev/)** | Entorno de trabajo con agentes de IA (headless via AppImage) |
-| **[GitHub CLI](https://cli.github.com/) (`gh`)** | Interacción con GitHub (issues, PRs, repos) |
-| **[GitHub Copilot CLI](https://github.com/features/copilot/cli) (`copilot`)** | Agente de IA en la terminal |
-| **[Antigravity CLI](https://antigravity.google/docs/cli/overview/) (`agy`)** | CLI de Antigravity |
+| **[Git](https://git-scm.com/)** | Version control |
+| **[Docker Engine + Compose](https://www.docker.com/)** | Container runtime and orchestration |
+| **[Tailscale](https://tailscale.com/)** | Mesh VPN for secure remote access |
+| **[Orca](https://www.onorca.dev/)** | AI agent workspace environment (headless via `.deb` package) |
+| **[GitHub CLI](https://cli.github.com/) (`gh`)** | GitHub management (issues, PRs, repos) |
+| **[GitHub Copilot CLI](https://github.com/features/copilot/cli) (`copilot`)** | Terminal AI agent |
+| **[Antigravity CLI](https://antigravity.google/docs/cli/overview/) (`agy`)** | Antigravity CLI |
 | **[FNM](https://github.com/schniz/fnm)** | Fast Node Manager |
-| **[Node.js LTS](https://nodejs.org/en)** | Runtime de JavaScript |
-| **[PNPM](https://pnpm.io/)** | Package manager (vía Corepack) |
-| **[1Password CLI](https://www.1password.dev/cli) (`op`)** | Gestión de secretos |
-| **[fzf](https://junegunn.github.io/fzf/), [ripgrep](https://github.com/burntsushi/ripgrep), [fd](https://github.com/sharkdp/fd), [tmux](https://github.com/tmux/tmux), [jq](https://jqlang.org/)** | Utilidades de shell |
-| **[OpenSSH server](https://www.openssh.org/)** | Acceso SSH remoto |
+| **[Node.js LTS](https://nodejs.org/en)** | JavaScript runtime |
+| **[PNPM](https://pnpm.io/)** | Package manager (via Corepack) |
+| **[1Password CLI](https://www.1password.dev/cli) (`op`)** | Secrets management |
+| **[fzf](https://junegunn.github.io/fzf/), [ripgrep](https://github.com/burntsushi/ripgrep), [fd](https://github.com/sharkdp/fd), [tmux](https://github.com/tmux/tmux), [jq](https://jqlang.org/)** | Essential shell utilities |
+| **[OpenSSH server](https://www.openssh.org/)** | Remote SSH access |
 
-## Cómo funciona el acceso remoto
+## How Remote Access Works
 
 ```
-Mac / móvil
+Mac / Mobile
     │
     │  Tailscale VPN
     ▼
-WSL2 Ubuntu (IP de Tailscale)
-    ├── Orca (port 6768)   ← acceso desde la app Orca en Mac/móvil
-    └── SSH (port 22)      ← acceso con cualquier cliente SSH o editor
+WSL2 Ubuntu (Tailscale IP)
+    ├── Orca (port 6768)   ← access from the Orca app on Mac/mobile
+    └── SSH (port 22)      ← access using any SSH client or editor
 ```
 
-1. El script instala y conecta Tailscale — tu WSL queda con una IP privada estable en tu red Tailscale
-2. Orca corre como servicio systemd (`orca-serve.service`) escuchando en el puerto `6768`
-3. Desde la app Orca en tu Mac o móvil: **Settings → Remote Orca Servers → Add Server**
+1. The script installs and links Tailscale — giving your WSL machine a persistent private IP on your Tailscale tailnet.
+2. Orca runs as a user systemd service (`orca-serve.service`) listening on port `6768`.
+3. From the Orca app on your Mac or mobile device: **Settings → Remote Orca Servers → Add Server**.
 
-## Pasos manuales post-instalación
+## Post-Installation Manual Steps
 
-El script no puede automatizar las siguientes acciones porque requieren credenciales:
+The script cannot automate these steps because they require interactive credentials:
 
-### 1. Copiar tu clave SSH (desde tu Mac)
+### 1. Copy your SSH public key (from your Mac)
 
 ```bash
-ssh-copy-id -i ~/.ssh/id_rsa.pub <usuario>@<tailscale-ip>
+ssh-copy-id -i ~/.ssh/id_rsa.pub <username>@<tailscale-ip>
 ```
 
-### 2. Autenticar las herramientas CLI
+### 2. Authenticate CLI tools
 
 ```bash
 gh auth login          # GitHub CLI
@@ -83,86 +83,94 @@ op signin              # 1Password CLI
 agy auth               # Antigravity CLI
 ```
 
-### 3. Verificar que Orca está corriendo
+### 3. Verify Orca is running
 
 ```bash
 systemctl --user status orca-serve.service
 journalctl --user -u orca-serve.service -f
 ```
 
-### 4. Verificar Docker
+### 4. Verify Docker
 
 ```bash
 docker run hello-world
 ```
 
-## Estructura del workspace
+## Workspace Structure
 
 ```
 ~/workspace
-├── developer   — proyectos personales
-├── work        — proyectos de trabajo
-└── playground  — experimentos y aprendizaje
+├── developer   — personal projects
+├── work        — work / team projects
+└── playground  — experiments and learning
 ```
 
-## Comandos útiles
+## Useful Commands
 
 ```bash
-# Ver IP de Tailscale
+# View Tailscale IP
 tailscale ip -4
 
-# Estado del servicio Orca
+# Orca service status
 systemctl --user status orca-serve.service
 
-# Logs de Orca en tiempo real
+# Real-time Orca logs
 journalctl --user -u orca-serve.service -f
 
-# Reiniciar Orca
+# Restart Orca
 systemctl --user restart orca-serve.service
 
-# Conectarse por SSH desde Mac
-ssh <usuario>@<tailscale-ip>
+# Update Orca to the latest release
+./update-orca.sh
+
+# SSH into devbox from Mac
+ssh <username>@<tailscale-ip>
 ```
 
-## Re-ejecutar el script
+## Re-running the Script
 
-El script es idempotente — detecta lo que ya está instalado y lo omite. Puedes re-ejecutarlo sin problema si algo falla a mitad.
+The bootstrap script is idempotent — it detects existing tools and skips them. You can safely re-run it if a network issue interrupts the initial setup.
 
-## Notas
+> **Note on updating Orca:** Re-running `install.sh` will skip Orca because it is already installed. Use `./update-orca.sh` to update Orca to the latest release without disrupting other services.
 
-- Requiere **systemd activo en WSL**. Si no está activo, el script lo configura y te pide que reinicies WSL (`wsl --shutdown` desde PowerShell)
-- Orca necesita `xvfb` porque corre headless (sin GPU/display)
-- El servicio Orca se configura con `loginctl enable-linger` para que sobreviva sin sesión activa
+## Notes
 
-## Testing con Docker
+- Requires **systemd enabled in WSL**. If not active, the script configures `/etc/wsl.conf` and prompts you to restart WSL (`wsl --shutdown` from PowerShell).
+- Orca runs headless with `xvfb-run` to ensure a virtual display is available without a physical GUI.
+- The Orca service is configured with `loginctl enable-linger` so that user background services keep running when you disconnect.
 
-El `Dockerfile` incluido permite validar el script en un contenedor Ubuntu sin tocar ninguna máquina real.
+## Docker-based Testing
 
-### Qué testea
+The included `Dockerfile` allows testing the bootstrap logic inside an Ubuntu container without affecting any live machines.
 
-Corre el script completo con mocks para las partes que son WSL/systemd-específicas y no aplican en Docker:
+### What it tests
 
-| Mockeado | Real |
+Runs the complete script with mocks for WSL/systemd-specific parts that do not apply in Docker:
+
+| Mocked | Real |
 |---|---|
-| `systemctl` / `systemd` | Paquetes APT |
+| `systemctl` / `systemd` | APT packages |
 | `tailscale` / `tailscaled` | FNM + Node.js LTS + pnpm |
-| Docker (evita Docker-in-Docker) | GitHub CLI (`gh`) |
-| Orca AppImage (evita descarga ~150MB) | 1Password CLI (`op`) |
+| Docker (avoids Docker-in-Docker) | GitHub CLI (`gh`) |
+| Orca .deb (avoids ~150MB download) | 1Password CLI (`op`) |
 | `xvfb-run` | GitHub Copilot CLI |
 | `loginctl` | Antigravity CLI (`agy`) |
 
-Al final del build corre un smoke test que verifica: `git`, `node`, `npm`, `pnpm`, `gh`, `op`, `jq`, `fzf`, `tmux`.
+At the end of the build, it runs a smoke test validating: `git`, `node`, `npm`, `pnpm`, `gh`, `op`, `jq`, `fzf`, `tmux`.
 
-### Correr el test
+### Run the test
 
 ```bash
 docker build -t devbox-test .
 ```
 
-El build falla si cualquier instalación o el smoke test falla — `set -e` está activo en todo el proceso.
+The build will fail if any installation step or the smoke test fails (`set -e` is active throughout).
 
-### Limpiar
+### Cleanup
 
 ```bash
 docker rmi devbox-test
 ```
+
+## License
+MIT License © 2026 Anthuan Vásquez. See [LICENSE](LICENSE) for details.
