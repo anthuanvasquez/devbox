@@ -86,12 +86,15 @@ RUN printf '[user]\n\tname = Test User\n\temail = test@devbox.local\n' \
 # Run the installer (no stdin pipe needed — git config is already in place)
 RUN bash /home/devbox/install.sh
 
+# Re-running must not reinstall tools or duplicate shell configuration.
+RUN bash /home/devbox/install.sh
+
 # ============================================================
 # Smoke-test: verify the tools that matter
 # ============================================================
 
 RUN bash -c ' \
-    export PATH="$HOME/.local/share/fnm:$PATH"; \
+    export PATH="$HOME/.local/share/fnm:$HOME/.local/bin:$HOME/.atuin/bin:$PATH"; \
     eval "$(fnm env --shell bash)"; \
     set -e; \
     echo "--- Smoke test ---"; \
@@ -103,6 +106,11 @@ RUN bash -c ' \
     op    --version; \
     jq    --version; \
     fzf   --version; \
+    bat   --version; \
+    eza   --version; \
+    zoxide --version; \
+    atuin --version; \
+    bash -ic "type z"; \
     tmux  -V; \
     echo "--- All checks passed ---"; \
 '

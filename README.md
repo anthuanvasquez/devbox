@@ -154,10 +154,10 @@ Runs the complete script with mocks for WSL/systemd-specific parts that do not a
 | `tailscale` / `tailscaled` | FNM + Node.js LTS + pnpm |
 | Docker (avoids Docker-in-Docker) | GitHub CLI (`gh`) |
 | Orca .deb (avoids ~150MB download) | 1Password CLI (`op`) |
-| `xvfb-run` | GitHub Copilot CLI |
+| `xvfb-run` | GitHub Copilot CLI, eza, zoxide, and Atuin |
 | `loginctl` | Antigravity CLI (`agy`) |
 
-At the end of the build, it runs a smoke test validating: `git`, `node`, `npm`, `pnpm`, `gh`, `op`, `jq`, `fzf`, `tmux`.
+At the end of the build, it runs a smoke test validating: `git`, `node`, `npm`, `pnpm`, `gh`, `op`, `jq`, `fzf`, `bat`, `eza`, `zoxide`, `atuin`, `z`, and `tmux`.
 
 ### Run the test
 
