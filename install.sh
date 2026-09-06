@@ -170,6 +170,7 @@ install_apt_packages() {
         ripgrep \
         fd-find \
         fzf \
+        bat \
         tmux \
         tree \
         shellcheck \
@@ -613,6 +614,79 @@ install_antigravity() {
 }
 
 # ------------------------------------------------------------
+# EZA
+# ------------------------------------------------------------
+
+install_eza() {
+    if command -v eza >/dev/null 2>&1; then
+        success "EZA already installed"
+        return
+    fi
+
+    info "Installing EZA..."
+
+    sudo mkdir -p /etc/apt/keyrings
+    wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor --yes -o /etc/apt/keyrings/gierens.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] https://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list >/dev/null
+    sudo chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
+
+    apt_get update
+    apt_get install -y eza
+
+    success "EZA installed"
+}
+
+# ------------------------------------------------------------
+# Zoxide
+# ------------------------------------------------------------
+
+install_zoxide() {
+    export PATH="${HOME}/.local/bin:${PATH}"
+
+    if command -v zoxide >/dev/null 2>&1; then
+        success "Zoxide already installed"
+        return
+    fi
+    info "Installing Zoxide..."
+    curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+
+    if ! grep -q 'zoxide init bash' "${HOME}/.bashrc"; then
+        cat >> "${HOME}/.bashrc" <<'EOF'
+# zoxide
+export PATH="$HOME/.local/bin:$PATH"
+eval "$(zoxide init bash)"
+EOF
+    fi
+
+    success "Zoxide installed"
+}
+
+# ------------------------------------------------------------
+# Atuin
+# ------------------------------------------------------------
+
+install_atuin() {
+    export PATH="${HOME}/.atuin/bin:${PATH}"
+
+    if command -v atuin >/dev/null 2>&1; then
+        success "Atuin already installed"
+        return
+    fi
+    info "Installing Atuin..."
+    curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh -s -- --non-interactive
+
+    if ! grep -q 'atuin init bash' "${HOME}/.bashrc"; then
+        cat >> "${HOME}/.bashrc" <<'EOF'
+# atuin
+export PATH="$HOME/.atuin/bin:$PATH"
+eval "$(atuin init bash)"
+EOF
+    fi
+
+    success "Atuin installed"
+}
+
+# ------------------------------------------------------------
 # Shell utilities
 # ------------------------------------------------------------
 
@@ -634,10 +708,9 @@ EOF
     fi
 
     # fzf
-    if ! grep -q 'fzf.bash' "${shell_rc}"; then
+    if ! grep -q 'fzf shell integration' "${shell_rc}"; then
         cat >> "${shell_rc}" <<'EOF'
-
-# fzf
+# fzf shell integration
 if [[ -f /usr/share/doc/fzf/examples/key-bindings.bash ]]; then
     source /usr/share/doc/fzf/examples/key-bindings.bash
 fi
@@ -647,6 +720,10 @@ if [[ -f /usr/share/doc/fzf/examples/completion.bash ]]; then
 fi
 EOF
     fi
+
+    # bat
+    mkdir -p "${HOME}/.local/bin"
+    ln -sfn /usr/bin/batcat "${HOME}/.local/bin/bat"
 
     success "Shell configured"
 }
@@ -660,9 +737,9 @@ create_directories() {
 
     mkdir -p \
         "${HOME}/workspace" \
-        "${HOME}/workspace/developer" \
+        "${HOME}/workspace/personal" \
         "${HOME}/workspace/work" \
-        "${HOME}/workspace/playground" \
+        "${HOME}/workspace/sandbox" \
         "${HOME}/.config"
 
     success "Workspace created at ${HOME}/workspace"
@@ -681,12 +758,18 @@ verify_installation() {
         npm
         pnpm
         docker
+        orca
+        tailscale
         gh
         copilot
         agy
         jq
         rg
         fzf
+        bat
+        eza
+        zoxide
+        atuin
         tmux
         op
     )
@@ -746,9 +829,9 @@ Logs                       : journalctl --user -u orca-serve.service -f
 Workspace:
 
     ~/workspace
-    ├── developer   - for your personal projects
+    ├── personal    - for your personal projects
     ├── work        - for your work projects
-    └── playground  - for experiments and learning
+    └── sandbox     - for experiments and learning
 
 Installed:
 
@@ -807,6 +890,9 @@ main() {
     install_gh
     install_copilot
     install_antigravity
+    install_eza
+    install_zoxide
+    install_atuin
     configure_shell_tools
     create_directories
     verify_installation
